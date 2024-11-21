@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index2</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .centered-container {
+            text-align: center;
+            margin: 0 auto;
+            width: 80%;
+            font-size: 2em;
+        }
+
+        .left-aligned {
+            text-align: left;
+            font-size: 1.3em;
+        }
+
+        .centered {
+            text-align: center;
+            font-size: 2.5em;
+        }
+
+        /* Новые стили для input и button */
+        #user-input {
+            width: 100%; /* Занять всю ширину контейнера */
+            padding: 15px; /* Добавляем внутренние отступы */
+            font-size: 1.3em; /* Увеличиваем размер шрифта */
+            border-radius: 5px; /* Закругление углов */
+            border: 2px solid #ccc; /* Граница */
+        }
+
+        #send-btn {
+            padding: 15px 30px; /* Увеличиваем внутренние отступы */
+            font-size: 1.3em; /* Увеличиваем размер шрифта */
+            border-radius: 5px; /* Закругление углов */
+            border: none; /* Убираем границу */
+            background-color: #4CAF50; /* Цвет фона кнопки */
+            color: white; /* Цвет текста кнопки */
+            cursor: pointer; /* Указатель мыши при наведении */
+        }
+
+        #send-btn:hover {
+            background-color: #cf7e14; /* Изменяем цвет кнопки при наведении */
+        }
+
+        .task {
+            margin: 10px 0; /* Отступы между задачами */
+        }
+        
+        .task button {
+            margin-left: 10px; /* Отступы между кнопками */
+        }
+    </style>
+</head>
+<body>
+    <div class="centered-container">
+        <h1 class="centered">Добро пожаловать в свой список задач</h1>
+        
+        <input type="text" id="user-input" placeholder="Введите текст новой зачачи">
+        <h1></h1>
+        <button id="send-btn">Добавить</button>
+        <div class="left-aligned" id="tasks-list"></div>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('#send-btn').click(function() {
+                // Получаем значение из текстового поля
+                const userInput = $('#user-input').val();
+                // Отправляем данные на сервер
+                $.post("http://127.0.0.1:5000/api/send", { text: userInput }, function(data) {
+                    // Инициируем загрузку задач после отправки
+                    loadTasks();
+                });
+            });
+
+            // Изначальная загрузка данных с сервера
+            loadTasks();
+
+            function loadTasks() {
+                $.get("http://127.0.0.1:5000/api", function(data) {
+                    const tasks = data.mes.split(',');
+                    let output = '';
+                    tasks.forEach(function(task) {
+                        if (task.trim() !== '') {
+                            const taskText = task.trim();
+                            output += `<div class="task">${taskText} 
+                                        <button class="edit-btn">Редактировать</button>
+                                        <button class="delete-btn">Удалить</button></div>`;
+                        }
+                    });
+                    $('#tasks-list').html(output);
+                });
+            }
+
+            // Обработчики кнопок редактирования и удаления
+            $(document).on('click', '.delete-btn', function() {
+                // Логика для удаления задачи
+                const taskText = $(this).parent().text().replace('Удалить', '').replace('Редактировать', '').trim();
+                $.post("http://127.0.0.1:5000/api/delete", { text: taskText }, function(response) {
+                    loadTasks(); // Обновляем список задач
+                });
+            });
+
+            $(document).on('click', '.edit-btn', function() {
+                const taskText = $(this).parent().text().replace('Удалить', '').replace('Редактировать', '').trim();
+                const newText = prompt("Редактировать задачу:", taskText);
+                if (newText) {
+                    $.post("http://127.0.0.1:5000/api/edit", { old_text: taskText, new_text: newText }, function(response) {
+                        loadTasks(); // Обновляем список задач
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
